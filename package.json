@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "start": "vercel dev",
+    "deploy": "vercel deploy --prod"
+  },
+  "devDependencies": {
+    "vercel": "^23.1.2"
+  },
+  "dependencies": {
+    "bignumber.js": "^9.0.1",
+    "ethers": "^5.5.1"
+  }
+}
