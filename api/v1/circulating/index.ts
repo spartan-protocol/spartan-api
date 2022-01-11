@@ -14,17 +14,15 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   awaitArray.push(spartaContract.totalSupply()); // Get raw supply
   awaitArray.push(spartaContract.balanceOf(addr.dead)); // Get dead/burned supply
   awaitArray.push(spartaContract.balanceOf(addr.reserve)); // Get reserve held supply
-  awaitArray.push(spartaContract.balanceOf(addr.dao)); // Get dao held supply
 
   awaitArray = await Promise.all(awaitArray);
 
   const supply = awaitArray[0].toString(); // Raw Supply
   const burned = awaitArray[1].toString(); // Dead/burned supply
   const reserve = awaitArray[2].toString(); // Reserve supply
-  const dao = awaitArray[3].toString(); // Dao supply
 
   const totalSupply = BN(supply).minus(burned);
-  const circulatingSupply = BN(totalSupply).minus(reserve).minus(dao);
+  const circulatingSupply = BN(totalSupply).minus(reserve);
 
   res.status(200).json(weiToUnit(circulatingSupply).toFixed());
 };

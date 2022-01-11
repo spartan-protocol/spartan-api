@@ -13,8 +13,6 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   let awaitArray = [];
   awaitArray.push(spartaContract.totalSupply()); // Get raw supply
   awaitArray.push(spartaContract.balanceOf(addr.dead)); // Get dead/burned supply
-  awaitArray.push(spartaContract.balanceOf(addr.reserve)); // Get reserve held supply
-  awaitArray.push(spartaContract.balanceOf(addr.dao)); // Get dao held supply
 
   awaitArray = await Promise.all(awaitArray);
 
