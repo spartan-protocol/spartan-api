@@ -27,8 +27,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   res
     .status(200)
     .json({
-      totalSupply: weiToUnit(totalSupply).toFixed(),
-      circulatingSupply: weiToUnit(circulatingSupply).toFixed(),
-      burned: weiToUnit(burned).toFixed(),
+      totalSupply: weiToUnit(totalSupply).toNumber(),
+      circulatingSupply: weiToUnit(circulatingSupply).toNumber(),
+      burned: weiToUnit(burned).toNumber(),
     });
 };

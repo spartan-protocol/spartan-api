@@ -21,5 +21,5 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
   const totalSupply = BN(supply).minus(burned);
 
-  res.status(200).json(weiToUnit(totalSupply).toFixed());
+  res.status(200).json(weiToUnit(totalSupply).toNumber());
 };

@@ -24,5 +24,5 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   const totalSupply = BN(supply).minus(burned);
   const circulatingSupply = BN(totalSupply).minus(reserve);
 
-  res.status(200).json(weiToUnit(circulatingSupply).toFixed());
+  res.status(200).json(weiToUnit(circulatingSupply).toNumber());
 };
