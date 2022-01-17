@@ -37,5 +37,5 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
   spartaTVL = spartaTVL.times(2).times(spartaPrice);
 
-  res.status(200).json(weiToUnit(spartaTVL).toFixed());
+  res.status(200).json(weiToUnit(spartaTVL).toNumber());
 };
