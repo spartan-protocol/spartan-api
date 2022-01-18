@@ -32,7 +32,7 @@ Returns just the circulating supply
 ### Response
 
 ```json5
-"89601682.073863892965724865"
+89601682.073863892965724865
 ```
 
 ## [`/v1/totalSupply`](https://api.spartanprotocol.org/api/v1/totalSupply)
@@ -46,7 +46,7 @@ Returns just the total supply
 ### Response
 
 ```json5
-"98599960.126087144180977466"
+98599960.126087144180977466
 ```
 
 ## [`/v1/tvlSPARTA`](https://api.spartanprotocol.org/api/v1/tvlSPARTA)
@@ -60,7 +60,7 @@ Returns the total protocol value locked, denominated in SPARTA units
 ### Response
 
 ```json5
-"23975737.340601869008484302"
+23975737.340601869008484302
 ```
 
 ## [`/v1/tvlUSD`](https://api.spartanprotocol.org/api/v1/tvlUSD)
@@ -74,7 +74,7 @@ Returns the total protocol value locked, denominated in $USD
 ### Response
 
 ```json5
-"5063921.575946114470368536721846"
+5063921.575946114470368536721846
 ```
 
 ## [`/v1/pools`](https://api.spartanprotocol.org/api/v1/pools)
