@@ -1,4 +1,5 @@
 import BigNumber from "bignumber.js";
+import { ethers } from "ethers";
 import abiErc20 from "./ABIs/ERC20.json";
 import abiPoolFactory from "./ABIs/PoolFactory.json";
 import abiUtils from "./ABIs/Utils.json";
@@ -8,17 +9,17 @@ export const rpcs = [
   "https://bsc-dataseed1.defibit.io/",
   "https://bsc-dataseed1.ninicoin.io/",
   // BACKUPS BELOW
-  // 'https://bsc-dataseed2.defibit.io/',
-  // 'https://bsc-dataseed3.defibit.io/',
-  // 'https://bsc-dataseed4.defibit.io/',
-  // 'https://bsc-dataseed2.ninicoin.io/',
-  // 'https://bsc-dataseed3.ninicoin.io/',
-  // 'https://bsc-dataseed4.ninicoin.io/',
-  // 'https://bsc-dataseed1.binance.org/',
-  // 'https://bsc-dataseed2.binance.org/',
-  // 'https://bsc-dataseed3.binance.org/',
-  // 'https://bsc-dataseed4.binance.org/',
-  // 'https://binance.ankr.com/',
+  // "https://bsc-dataseed2.defibit.io/",
+  // "https://bsc-dataseed3.defibit.io/",
+  // "https://bsc-dataseed4.defibit.io/",
+  // "https://bsc-dataseed2.ninicoin.io/",
+  // "https://bsc-dataseed3.ninicoin.io/",
+  // "https://bsc-dataseed4.ninicoin.io/",
+  "https://bsc-dataseed1.binance.org/",
+  // "https://bsc-dataseed2.binance.org/",
+  // "https://bsc-dataseed3.binance.org/",
+  // "https://bsc-dataseed4.binance.org/",
+  // "https://binance.ankr.com/",
 ];
 
 export const addr = {
@@ -47,3 +48,47 @@ export const weiToUnit = (weiString) => {
 
 export const subgraphAPI =
   "https://api.thegraph.com/subgraphs/name/spartan-protocol/pool-factory";
+
+const checkResolved = (settledItem, errorMsg) => {
+  if (settledItem.status === "fulfilled") {
+    return settledItem.value;
+  }
+  return errorMsg;
+};
+
+const withTimeout = (millis, promise) => {
+  const timeout = new Promise((resolve, reject) =>
+    setTimeout(() => reject(new Error(`Timed out after ${millis} ms.`)), millis)
+  );
+  return Promise.race([promise, timeout]);
+};
+
+export const getRPC = async () => {
+  // const provider = new ethers.providers.StaticJsonRpcProvider(rpcs[index]); // simple provider unsigned & cached chainId
+  try {
+    let awaitArray = [];
+    for (let i = 0; i < rpcs.length; i++) {
+      const provider = new ethers.providers.StaticJsonRpcProvider(rpcs[i]); // simple provider unsigned & cached chainId
+      awaitArray.push(withTimeout(3000, provider.getBlockNumber()));
+    }
+    awaitArray = await Promise.allSettled(awaitArray);
+    let _rpcs = [];
+    for (let i = 0; i < rpcs.length; i++) {
+      _rpcs.push({
+        url: rpcs[i],
+        block: checkResolved(awaitArray[i], 0),
+        good: awaitArray[i].status === "fulfilled",
+      });
+    }
+    const isEmpty = _rpcs.filter((x) => x.good === true).length <= 0;
+    if (isEmpty) {
+      _rpcs[0].block = 100;
+      _rpcs[0].good = true;
+    }
+    _rpcs = _rpcs.sort((a, b) => b.block - a.block);
+
+    return _rpcs[0];
+  } catch (error) {
+    return false;
+  }
+};
