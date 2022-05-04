@@ -48,6 +48,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         metricsPoolDays(first: 1, orderBy: timestamp, orderDirection: desc, where: {pool: "${poolAddr.toLowerCase()}"}) {
           pool {id, token0 {id, symbol, name, decimals}, baseAmount, tokenAmount, tvlUSD}
           volUSD,
+          volSPARTA,
         }
       }
     `;
@@ -92,6 +93,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       const tokenAmount = BN(current.pool.tokenAmount);
       const basePrice = baseAmount.div(tokenAmount);
       const usdPrice = basePrice.times(spartaPrice);
+      const volQuote = BN(current.volSPARTA).div(basePrice);
 
       prev[`${addr.spartav2}_${getAddress(current.pool.token0.id)}`] = {
         pool_address: getAddress(current.pool.id),
@@ -103,12 +105,13 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         quote_symbol: current.pool.token0.symbol,
         last_price: basePrice,
         last_price_usd: usdPrice,
+        volume: weiToUnit(current.volSPARTA),
+        volume_quote: weiToUnit(volQuote),
         volume_usd: weiToUnit(current.volUSD),
         liquidity_usd: weiToUnit(current.pool.tvlUSD),
         swapUrl:
           "https://dapp.spartanprotocol.org/swap?asset1=" +
-          getAddress(current.pool.token0.id) +
-          "&type1=token&type2=token",
+          getAddress(current.pool.token0.id),
       };
       return prev;
     }, {});

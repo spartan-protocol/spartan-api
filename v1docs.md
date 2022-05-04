@@ -23,7 +23,7 @@ Returns relevant supply figures (Total supply, circulating supply & burned/dead 
 
 ## [`/v1/circulating`](https://api.spartanprotocol.org/api/v1/circulating)
 
-Returns just the circulating supply
+Returns the circulating supply
 
 ### Request
 
@@ -37,7 +37,7 @@ Returns just the circulating supply
 
 ## [`/v1/totalSupply`](https://api.spartanprotocol.org/api/v1/totalSupply)
 
-Returns just the total supply
+Returns the total supply
 
 ### Request
 
@@ -99,6 +99,8 @@ Returns every Spartan Protocol pool in order of highest TVL
     "quote_symbol": "...",          // Symbol for the paired token
     "last_price": "...",            // Price denominated in SPARTA  
     "last_price_usd": "...",        // Price denominated in USD
+    "volume": "...",                // Volume denominated in SPARTA
+    "volume_quote": "...",          // Volume denominated in quote token
     "volume_usd": "...",            // Volume denominated in USD
     "liquidity": "...",             // Liquidity denominated in USD
     "swapUrl": "https://dapp.spartanprotocol.org/swap?asset1=0x...", // Direct URL to swap token in the pool
@@ -109,7 +111,7 @@ Returns every Spartan Protocol pool in order of highest TVL
 
 ## [`/v1/pool?address=0x...`](https://api.spartanprotocol.org/api/v1/pool?address=0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56)
 
-Returns every Spartan Protocol pool in order of highest TVL
+Returns a single Spartan Protocol pool based on quote token address
 
 ### Request
 
@@ -129,6 +131,8 @@ Returns every Spartan Protocol pool in order of highest TVL
     "quote_symbol": "...",          // Symbol for the paired token
     "last_price": "...",            // Price denominated in SPARTA  
     "last_price_usd": "...",        // Price denominated in USD
+    "volume": "...",                // Volume denominated in SPARTA
+    "volume_quote": "...",          // Volume denominated in quote token
     "volume_usd": "...",            // Volume denominated in USD
     "liquidity": "...",             // Liquidity denominated in USD
     "swapUrl": "https://dapp.spartanprotocol.org/swap?asset1=0x...", // Direct URL to swap token in the pool
