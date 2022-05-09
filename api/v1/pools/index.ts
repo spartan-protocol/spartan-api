@@ -60,6 +60,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         metricsPoolDays(first: 1, orderBy: timestamp, orderDirection: desc, where: {pool: "${pools[i].id}"}) {
           volUSD,
           volSPARTA,
+          volTOKEN,
         }
       }
     `;
@@ -81,8 +82,9 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   awaitArray = await Promise.all(awaitArray);
 
   for (let i = 0; i < pools.length; i++) {
-    pools[i].volUSD = awaitArray[i].data.data.metricsPoolDays[0].volUSD;
     pools[i].volSPARTA = awaitArray[i].data.data.metricsPoolDays[0].volSPARTA;
+    pools[i].volTOKEN = awaitArray[i].data.data.metricsPoolDays[0].volTOKEN;
+    pools[i].volUSD = awaitArray[i].data.data.metricsPoolDays[0].volUSD;
   }
 
   const poolResult = pools.reduce((prev, current) => {
@@ -90,8 +92,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     const tokenAmount = BN(current.tokenAmount);
     const basePrice = baseAmount.div(tokenAmount);
     const usdPrice = basePrice.times(spartaPrice);
-    const volQuote = BN(current.volSPARTA).div(basePrice);
-
+    
     prev[`${addr.spartav2}_${getAddress(current.token0.id)}`] = {
       poolAddr: getAddress(current.id),
       base_id: "0x3910db0600eA925F63C36DdB1351aB6E2c6eb102",
@@ -103,7 +104,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       last_price: basePrice,
       last_price_usd: usdPrice,
       volume: weiToUnit(current.volSPARTA),
-      volume_quote: weiToUnit(volQuote),
+      volume_quote: weiToUnit(current.volTOKEN),
       volume_usd: weiToUnit(current.volUSD),
       liquidity_usd: weiToUnit(current.tvlUSD),
       swapUrl:
