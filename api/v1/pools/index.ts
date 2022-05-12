@@ -58,9 +58,9 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     const metricQuery = `
       query {
         metricsPoolDays(first: 1, orderBy: timestamp, orderDirection: desc, where: {pool: "${pools[i].id}"}) {
-          volUSD,
-          volSPARTA,
-          volTOKEN,
+          volRollingUSD,
+          volRollingSPARTA,
+          volRollingTOKEN,
         }
       }
     `;
@@ -103,9 +103,9 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       quote_symbol: current.token0.symbol,
       last_price: basePrice,
       last_price_usd: usdPrice,
-      volume: weiToUnit(current.volSPARTA),
-      volume_quote: weiToUnit(current.volTOKEN),
-      volume_usd: weiToUnit(current.volUSD),
+      volume: weiToUnit(current.volRollingSPARTA),
+      volume_quote: weiToUnit(current.volRollingTOKEN),
+      volume_usd: weiToUnit(current.volRollingUSD),
       liquidity_usd: weiToUnit(current.tvlUSD),
       swapUrl:
         "https://dapp.spartanprotocol.org/swap?asset1=" +

@@ -99,9 +99,9 @@ Returns every Spartan Protocol pool in order of highest TVL
     "quote_symbol": "...",          // Symbol for the paired token
     "last_price": "...",            // Price denominated in SPARTA  
     "last_price_usd": "...",        // Price denominated in USD
-    "volume": "...",                // Volume denominated in SPARTA
-    "volume_quote": "...",          // Volume denominated in quote token
-    "volume_usd": "...",            // Volume denominated in USD
+    "volume": "...",                // Past 24hrs volume denominated in SPARTA
+    "volume_quote": "...",          // Past 24hrs volume denominated in quote token
+    "volume_usd": "...",            // Past 24hrs volume denominated in USD
     "liquidity": "...",             // Liquidity denominated in USD
     "swapUrl": "https://dapp.spartanprotocol.org/swap?asset1=0x...", // Direct URL to swap token in the pool
   },
@@ -131,9 +131,9 @@ Returns a single Spartan Protocol pool based on quote token address
     "quote_symbol": "...",          // Symbol for the paired token
     "last_price": "...",            // Price denominated in SPARTA  
     "last_price_usd": "...",        // Price denominated in USD
-    "volume": "...",                // Volume denominated in SPARTA
-    "volume_quote": "...",          // Volume denominated in quote token
-    "volume_usd": "...",            // Volume denominated in USD
+    "volume": "...",                // Past 24hrs volume denominated in SPARTA
+    "volume_quote": "...",          // Past 24hrs volume denominated in quote token
+    "volume_usd": "...",            // Past 24hrs volume denominated in USD
     "liquidity": "...",             // Liquidity denominated in USD
     "swapUrl": "https://dapp.spartanprotocol.org/swap?asset1=0x...", // Direct URL to swap token in the pool
   }
