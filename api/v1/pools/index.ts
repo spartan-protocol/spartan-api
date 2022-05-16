@@ -82,9 +82,9 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   awaitArray = await Promise.all(awaitArray);
 
   for (let i = 0; i < pools.length; i++) {
-    pools[i].volSPARTA = awaitArray[i].data.data.metricsPoolDays[0].volSPARTA;
-    pools[i].volTOKEN = awaitArray[i].data.data.metricsPoolDays[0].volTOKEN;
-    pools[i].volUSD = awaitArray[i].data.data.metricsPoolDays[0].volUSD;
+    pools[i].volRollingSPARTA = awaitArray[i].data.data.metricsPoolDays[0].volRollingSPARTA;
+    pools[i].volRollingTOKEN = awaitArray[i].data.data.metricsPoolDays[0].volRollingTOKEN;
+    pools[i].volRollingUSD = awaitArray[i].data.data.metricsPoolDays[0].volRollingUSD;
   }
 
   const poolResult = pools.reduce((prev, current) => {
