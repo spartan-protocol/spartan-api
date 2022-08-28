@@ -55,36 +55,59 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
   let awaitArray = [];
   for (let i = 0; i < pools.length; i++) {
-    const metricQuery = `
+    if (pools[i].id !== "0xd1126c0ced1c6d2e8ef3e8157e4576a507ca5f4d") {
+      const metricQuery = `
       query {
         metricsPoolDays(first: 1, orderBy: timestamp, orderDirection: desc, where: {pool: "${pools[i].id}"}) {
           volRollingUSD,
           volRollingSPARTA,
-          volRollingTOKEN,
+            volRollingTOKEN,
+          }
         }
-      }
-    `;
-    const graphqlQuery1 = {
-      operationName: "metricsPoolDays",
-      query: metricQuery,
-      variables: {},
-    };
-    awaitArray.push(
-      axios({
-        url: endpoint,
-        method: "post",
-        headers: headers,
-        data: graphqlQuery1,
-      })
-    );
+        `;
+      const graphqlQuery1 = {
+        operationName: "metricsPoolDays",
+        query: metricQuery,
+        variables: {},
+      };
+      awaitArray.push(
+        axios({
+          url: endpoint,
+          method: "post",
+          headers: headers,
+          data: graphqlQuery1,
+        })
+      );
+    } else {
+      // data.data.metricsPoolDays[0].volRollingSPARTA
+      const metricsPoolDays = [];
+      metricsPoolDays.push({
+        volRollingSPARTA: "0",
+        volRollingTOKEN: "0",
+        volRollingUSD: "0",
+      });
+      awaitArray.push({
+        data: {
+          data: {
+            metricsPoolDays: metricsPoolDays,
+          },
+        },
+      });
+    }
   }
 
+  console.log("debug", awaitArray);
   awaitArray = await Promise.all(awaitArray);
 
   for (let i = 0; i < pools.length; i++) {
-    pools[i].volRollingSPARTA = awaitArray[i].data.data.metricsPoolDays[0].volRollingSPARTA;
-    pools[i].volRollingTOKEN = awaitArray[i].data.data.metricsPoolDays[0].volRollingTOKEN;
-    pools[i].volRollingUSD = awaitArray[i].data.data.metricsPoolDays[0].volRollingUSD;
+    console.log("debug", pools[i].id);
+    console.log("debug", awaitArray[i].data.data);
+    pools[i].volRollingSPARTA =
+      awaitArray[i].data.data.metricsPoolDays[0].volRollingSPARTA;
+    pools[i].volRollingTOKEN =
+      awaitArray[i].data.data.metricsPoolDays[0].volRollingTOKEN;
+    pools[i].volRollingUSD =
+      awaitArray[i].data.data.metricsPoolDays[0].volRollingUSD;
   }
 
   const poolResult = pools.reduce((prev, current) => {
@@ -92,7 +115,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     const tokenAmount = BN(current.tokenAmount);
     const basePrice = baseAmount.div(tokenAmount);
     const usdPrice = basePrice.times(spartaPrice);
-    
+
     prev[`${addr.spartav2}_${getAddress(current.token0.id)}`] = {
       poolAddr: getAddress(current.id),
       base_id: "0x3910db0600eA925F63C36DdB1351aB6E2c6eb102",
