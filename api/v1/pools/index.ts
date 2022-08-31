@@ -55,8 +55,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
   let awaitArray = [];
   for (let i = 0; i < pools.length; i++) {
-    if (pools[i].id !== "0xd1126c0ced1c6d2e8ef3e8157e4576a507ca5f4d") {
-      const metricQuery = `
+    const metricQuery = `
       query {
         metricsPoolDays(first: 1, orderBy: timestamp, orderDirection: desc, where: {pool: "${pools[i].id}"}) {
           volRollingUSD,
@@ -65,43 +64,24 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           }
         }
         `;
-      const graphqlQuery1 = {
-        operationName: "metricsPoolDays",
-        query: metricQuery,
-        variables: {},
-      };
-      awaitArray.push(
-        axios({
-          url: endpoint,
-          method: "post",
-          headers: headers,
-          data: graphqlQuery1,
-        })
-      );
-    } else {
-      // data.data.metricsPoolDays[0].volRollingSPARTA
-      const metricsPoolDays = [];
-      metricsPoolDays.push({
-        volRollingSPARTA: "0",
-        volRollingTOKEN: "0",
-        volRollingUSD: "0",
-      });
-      awaitArray.push({
-        data: {
-          data: {
-            metricsPoolDays: metricsPoolDays,
-          },
-        },
-      });
-    }
+    const graphqlQuery1 = {
+      operationName: "metricsPoolDays",
+      query: metricQuery,
+      variables: {},
+    };
+    awaitArray.push(
+      axios({
+        url: endpoint,
+        method: "post",
+        headers: headers,
+        data: graphqlQuery1,
+      })
+    );
   }
 
-  console.log("debug", awaitArray);
   awaitArray = await Promise.all(awaitArray);
 
   for (let i = 0; i < pools.length; i++) {
-    console.log("debug", pools[i].id);
-    console.log("debug", awaitArray[i].data.data);
     pools[i].volRollingSPARTA =
       awaitArray[i].data.data.metricsPoolDays[0].volRollingSPARTA;
     pools[i].volRollingTOKEN =
