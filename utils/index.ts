@@ -1,6 +1,8 @@
 import BigNumber from "bignumber.js";
 import { ethers } from "ethers";
+import pool from "../api/v1/pool";
 import abiErc20 from "./ABIs/ERC20.json";
+import abiPool from "./ABIs/Pool.json";
 import abiPoolFactory from "./ABIs/PoolFactory.json";
 import abiUtils from "./ABIs/Utils.json";
 
@@ -34,6 +36,7 @@ export const addr = {
 
 export const abis = {
   erc20: abiErc20.abi,
+  pool: abiPool.abi,
   poolFactory: abiPoolFactory.abi,
   utils: abiUtils.abi,
 };
