@@ -20,7 +20,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       addr.ssutils,
       abis.ssutils,
       provider
-    );
+    ); // Get SpartanSwap Utils contract
 
     let awaitArray = [];
     awaitArray.push(ssutilsContract.getCircSupply()); // Get circulating supply of SPARTA
