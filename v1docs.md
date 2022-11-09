@@ -41,7 +41,7 @@ Returns the total supply
 
 ### Request
 
-`GET https://api.spartanprotocol.org/api/v1/circulating`
+`GET https://api.spartanprotocol.org/api/v1/totalSupply`
 
 ### Response
 
