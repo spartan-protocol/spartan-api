@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { ethers } from "ethers";
-import { abis, addr, BN, getRPC, weiToUnit } from "../../../utils";
+import { abis, addr, getRPC, weiToUnit } from "../../../utils";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   const rpc = await getRPC(); // Get good RPC url
@@ -16,34 +16,17 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
   try {
     const provider = new ethers.providers.JsonRpcProvider(rpc.url); // Get provider via RPC
-    const poolFactory = new ethers.Contract(
-      addr.poolFactory,
-      abis.poolFactory,
+    const ssutilsContract = new ethers.Contract(
+      addr.ssutils,
+      abis.ssutils,
       provider
-    ); // Get PoolFactory contract obj
-    const spartaContract = new ethers.Contract(
-      addr.spartav2,
-      abis.erc20,
-      provider
-    ); // Get SPARTA contract obj
-
-    const poolArray = await poolFactory.getPoolAssets();
+    ); // Get SpartanSwap Utils contract
 
     let awaitArray = [];
-    for (let i = 0; i < poolArray.length; i++) {
-      awaitArray.push(spartaContract.balanceOf(poolArray[i])); // Get pool's SPARTA balance
-    }
-
+    awaitArray.push(ssutilsContract.getTVLUnbounded()); // Total TVL (unbounded) in SPARTA unit value (SPARTA side * 2)
     awaitArray = await Promise.all(awaitArray);
 
-    let spartaTVL = BN(0);
-    for (let i = 0; i < poolArray.length; i++) {
-      spartaTVL = spartaTVL.plus(awaitArray[i].toString());
-    }
-
-    spartaTVL = spartaTVL.times(2);
-
-    res.status(200).json(weiToUnit(spartaTVL).toNumber());
+    res.status(200).json(weiToUnit(awaitArray[0].toString()).toNumber());
   } catch (error) {
     res.status(500).json({
       error: {
