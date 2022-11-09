@@ -1,7 +1,7 @@
+import { BigNumber } from 'bignumber.js';
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import axios from "axios";
 import { ethers } from "ethers";
-import { abis, addr, BN, getRPC, weiToUnit } from "../../../utils";
+import { abis, addr, getRPC, weiToUnit } from "../../../utils";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   const rpc = await getRPC(); // Get good RPC url
@@ -12,44 +12,28 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         message: "No valid RPC URLs available",
       },
     });
-    return
+    return;
   }
 
   try {
     const provider = new ethers.providers.StaticJsonRpcProvider(rpc.url); // simple provider unsigned & cached chainId
-
-    const poolFactory = new ethers.Contract(
-      addr.poolFactory,
-      abis.poolFactory,
+    const ssutilsContract = new ethers.Contract(
+      addr.ssutils,
+      abis.ssutils,
       provider
-    ); // Get PoolFactory contract obj
-    const spartaContract = new ethers.Contract(
-      addr.spartav2,
-      abis.erc20,
-      provider
-    ); // Get SPARTA contract obj
+    ); // Get SpartanSwap Utils contract
 
-    const poolArray = await poolFactory.getPoolAssets();
-
-    let awaitArray = [];
-    for (let i = 0; i < poolArray.length; i++) {
-      awaitArray.push(spartaContract.balanceOf(poolArray[i])); // Get pool's SPARTA balance
-    }
-
+    let awaitArray:BigNumber[] = [];
+    awaitArray.push(ssutilsContract.getInternalPrice()); // Get internally derived SPARTA price
+    awaitArray.push(ssutilsContract.getTVLUnbounded()); // Get total TVL in SPARTA unit value
     awaitArray = await Promise.all(awaitArray);
 
-    let spartaTVL = BN(0);
-    for (let i = 0; i < poolArray.length; i++) {
-      spartaTVL = spartaTVL.plus(awaitArray[i].toString());
-    }
+    const spartaPrice:string = awaitArray[0].toString();
+    const tvlSparta:string = awaitArray[1].toString();
 
-    const resp = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price?ids=spartan-protocol-token&vs_currencies=usd"
-    );
-    const spartaPrice = resp.data["spartan-protocol-token"].usd;
+    const tvlUSD = weiToUnit(spartaPrice).times(tvlSparta);
 
-    spartaTVL = spartaTVL.times(2).times(spartaPrice);
-    res.status(200).json(weiToUnit(spartaTVL).toNumber());
+    res.status(200).json(weiToUnit(tvlUSD).toNumber());
   } catch (error) {
     res.status(500).json({
       error: {

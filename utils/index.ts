@@ -1,12 +1,13 @@
 import BigNumber from "bignumber.js";
 import { ethers } from "ethers";
-import pool from "../api/v1/pool";
 import abiErc20 from "./ABIs/ERC20.json";
 import abiPool from "./ABIs/Pool.json";
 import abiPoolFactory from "./ABIs/PoolFactory.json";
 import abiUtils from "./ABIs/Utils.json";
+import abiSSUtils from "./ABIs/SpartanSwapUtils.json";
 
 export const rpcs = [
+  // Main RPCs
   "https://bsc-dataseed.binance.org/",
   "https://bsc-dataseed1.defibit.io/",
   "https://bsc-dataseed1.ninicoin.io/",
@@ -17,11 +18,17 @@ export const rpcs = [
   // "https://bsc-dataseed2.ninicoin.io/",
   // "https://bsc-dataseed3.ninicoin.io/",
   // "https://bsc-dataseed4.ninicoin.io/",
-  "https://bsc-dataseed1.binance.org/",
+  // "https://bsc-dataseed1.binance.org/",
   // "https://bsc-dataseed2.binance.org/",
   // "https://bsc-dataseed3.binance.org/",
   // "https://bsc-dataseed4.binance.org/",
-  // "https://binance.ankr.com/",
+  // "https://rpc.ankr.com/bsc",
+  // "https://bscrpc.com",
+  // "https://binance.nodereal.io",
+  // ENV conditionals - Make sure conditional RPCs are not the first index of this array
+  process.env.NODE_ENV === "production"
+    ? "https://bsc-mainnet.nodereal.io/v1/6466b598f3ce4c7aa04b13f19fe0f359" // Permissioned to the SP domain (whitelist)
+    : process.env.REACT_APP_NODEREAL_PRIVATE,
 ];
 
 export const addr = {
@@ -32,6 +39,7 @@ export const addr = {
   dead: "0x000000000000000000000000000000000000dead",
   poolFactory: "0x2C577706579E08A88bd30df0Fd7A5778A707c3AD",
   utils: "0xFC7eAd29ee55EabEC54dBc38bd03852e1fF46D50",
+  ssutils: "0x3B599Dd050a10D224195A921a172fFDB50D9B559",
 };
 
 export const abis = {
@@ -39,6 +47,7 @@ export const abis = {
   pool: abiPool.abi,
   poolFactory: abiPoolFactory.abi,
   utils: abiUtils.abi,
+  ssutils: abiSSUtils.abi,
 };
 
 export const BN = (string) => {

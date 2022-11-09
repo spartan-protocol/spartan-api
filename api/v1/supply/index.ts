@@ -16,30 +16,32 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
   try {
     const provider = new ethers.providers.JsonRpcProvider(rpc.url); // Get provider via RPC
+    const ssutilsContract = new ethers.Contract(
+      addr.ssutils,
+      abis.ssutils,
+      provider
+    ); // Get SpartanSwap Utils contract
     const spartaContract = new ethers.Contract(
       addr.spartav2,
       abis.erc20,
       provider
-    ); // Get SPARTA contract obj
+    ); // Get SPARTA contract
 
     let awaitArray = [];
-    awaitArray.push(spartaContract.totalSupply()); // Get raw supply
-    awaitArray.push(spartaContract.balanceOf(addr.dead)); // Get dead/burned supply
-    awaitArray.push(spartaContract.balanceOf(addr.reserve)); // Get reserve held supply
+    awaitArray.push(ssutilsContract.getTotalSupply()); // Total Supply minus burned
+    awaitArray.push(ssutilsContract.getCircSupply()); // Circ Supply (minus burned and reserve held)
+    awaitArray.push(spartaContract.balanceOf(addr.dead)); // Dead/burned supply
 
     awaitArray = await Promise.all(awaitArray);
 
-    const supply = awaitArray[0].toString(); // Raw Supply
-    const burned = awaitArray[1].toString(); // Dead/burned supply
-    const reserve = awaitArray[2].toString(); // Reserve supply
-
-    const totalSupply = BN(supply).minus(burned);
-    const circulatingSupply = BN(totalSupply).minus(reserve);
+    const totalSupply = awaitArray[0].toString(); // Total Supply minus burned
+    const circSupply = awaitArray[1].toString(); // Circ Supply (minus burned and reserve held)
+    const burnedSupply = awaitArray[2].toString(); // Dead/burned supply
 
     res.status(200).json({
       totalSupply: weiToUnit(totalSupply).toNumber(),
-      circulatingSupply: weiToUnit(circulatingSupply).toNumber(),
-      burned: weiToUnit(burned).toNumber(),
+      circulatingSupply: weiToUnit(circSupply).toNumber(),
+      burned: weiToUnit(burnedSupply).toNumber(),
     });
   } catch (error) {
     res.status(500).json({
