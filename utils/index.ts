@@ -5,6 +5,7 @@ import abiErc20 from "./ABIs/ERC20.json";
 import abiPool from "./ABIs/Pool.json";
 import abiPoolFactory from "./ABIs/PoolFactory.json";
 import abiUtils from "./ABIs/Utils.json";
+import abiSSUtils from "./ABIs/SpartanSwapUtils.json";
 
 export const rpcs = [
   "https://bsc-dataseed.binance.org/",
@@ -32,6 +33,7 @@ export const addr = {
   dead: "0x000000000000000000000000000000000000dead",
   poolFactory: "0x2C577706579E08A88bd30df0Fd7A5778A707c3AD",
   utils: "0xFC7eAd29ee55EabEC54dBc38bd03852e1fF46D50",
+  ssutils: "0x3B599Dd050a10D224195A921a172fFDB50D9B559",
 };
 
 export const abis = {
@@ -39,6 +41,7 @@ export const abis = {
   pool: abiPool.abi,
   poolFactory: abiPoolFactory.abi,
   utils: abiUtils.abi,
+  ssutils: abiSSUtils.abi,
 };
 
 export const BN = (string) => {
