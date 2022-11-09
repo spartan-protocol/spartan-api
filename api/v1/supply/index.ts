@@ -28,14 +28,14 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     ); // Get SPARTA contract
 
     let awaitArray = [];
-    awaitArray.push(ssutilsContract.getTotalSupply()); // Get raw supply
-    awaitArray.push(ssutilsContract.getCircSupply()); // Get reserve held supply
-    awaitArray.push(spartaContract.balanceOf(addr.dead)); // Get dead/burned supply
+    awaitArray.push(ssutilsContract.getTotalSupply()); // Total Supply minus burned
+    awaitArray.push(ssutilsContract.getCircSupply()); // Circ Supply (minus burned and reserve held)
+    awaitArray.push(spartaContract.balanceOf(addr.dead)); // Dead/burned supply
 
     awaitArray = await Promise.all(awaitArray);
 
     const totalSupply = awaitArray[0].toString(); // Total Supply minus burned
-    const circSupply = awaitArray[1].toString(); // Circ Supply -
+    const circSupply = awaitArray[1].toString(); // Circ Supply (minus burned and reserve held)
     const burnedSupply = awaitArray[2].toString(); // Dead/burned supply
 
     res.status(200).json({
