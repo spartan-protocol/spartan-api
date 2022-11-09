@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { ethers } from "ethers";
-import { abis, addr, BN, getRPC, weiToUnit } from "../../../utils";
+import { abis, addr, getRPC, weiToUnit } from "../../../utils";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   const rpc = await getRPC(); // Get good RPC url
