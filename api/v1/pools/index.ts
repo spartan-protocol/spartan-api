@@ -1,7 +1,8 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAddress } from "@ethersproject/address";
 import axios from "axios";
-import { addr, BN, subgraphAPI, weiToUnit } from "../../../utils";
+import { abis, addr, BN, getRPC, subgraphAPI, weiToUnit } from "../../../utils";
+import { ethers } from "ethers";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   const poolsQuery = `
@@ -30,10 +31,33 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     variables: {},
   };
 
-  const resp = await axios.get(
-    "https://api.coingecko.com/api/v3/simple/price?ids=spartan-protocol-token&vs_currencies=usd"
-  );
-  const spartaPrice = resp.data["spartan-protocol-token"].usd;
+  const rpc = await getRPC(); // Get good RPC url
+  if (!rpc || !rpc.good) {
+    res.status(500).json({
+      error: {
+        code: 500,
+        message: "No valid RPC URLs available",
+      },
+    });
+    return;
+  }
+
+  let spartaPrice = "0.013";
+  try {
+    const provider = new ethers.providers.JsonRpcProvider(rpc.url); // Get provider via RPC
+    const ssutilsContract = new ethers.Contract(
+      addr.ssutils,
+      abis.ssutils,
+      provider
+    ); // Get SpartanSwap Utils contract
+    spartaPrice = await ssutilsContract.getInternalPrice();
+    spartaPrice = weiToUnit(spartaPrice.toString()).toString();
+  } catch (error) {
+    const resp = await axios.get(
+      "https://api.coingecko.com/api/v3/simple/price?ids=spartan-protocol-token&vs_currencies=usd"
+    );
+    spartaPrice = resp.data["spartan-protocol-token"].usd;
+  }
 
   let pools = [];
   try {

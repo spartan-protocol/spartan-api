@@ -34,6 +34,22 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     const provider = new ethers.providers.JsonRpcProvider(rpc.url); // Get provider via RPC
     const utilsContract = new ethers.Contract(addr.utils, abis.utils, provider); // Get UTILS contract
     const poolAddr = await utilsContract.getPool(getAddress(req.query.address));
+    let spartaPrice = "0.013";
+    try {
+      const ssutilsContract = new ethers.Contract(
+        addr.ssutils,
+        abis.ssutils,
+        provider
+      ); // Get SpartanSwap Utils contract
+      spartaPrice = await ssutilsContract.getInternalPrice();
+      spartaPrice = weiToUnit(spartaPrice.toString()).toString();
+    } catch (error) {
+      const resp = await axios.get(
+        "https://api.coingecko.com/api/v3/simple/price?ids=spartan-protocol-token&vs_currencies=usd"
+      );
+      spartaPrice = resp.data["spartan-protocol-token"].usd;
+    }
+
     if (poolAddr === addr.bnb) {
       res.status(400).json({
         error: {
@@ -43,6 +59,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       });
       return;
     }
+    
     const poolsQuery = `
       query {
         metricsPoolDays(first: 1, orderBy: timestamp, orderDirection: desc, where: {pool: "${poolAddr.toLowerCase()}"}) {
@@ -65,11 +82,6 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       query: poolsQuery,
       variables: {},
     };
-
-    const resp = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price?ids=spartan-protocol-token&vs_currencies=usd"
-    );
-    const spartaPrice = resp.data["spartan-protocol-token"].usd;
 
     let pools = [];
     try {
