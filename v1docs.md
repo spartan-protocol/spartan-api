@@ -151,3 +151,20 @@ Returns a single Spartan Protocol pool based on quote token address
   }
 }
 ```
+
+## [`/v1/swapQuote?inputAddr=0x...&outputAddr=0x...&inputUnits=100000000000000000000`](https://api.spartanprotocol.org/api/v1/swapQuote?inputAddr=0x55d398326f99059fF775485246999027B3197955&outputAddr=0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56&inputUnits=100000000000000000000)
+
+Returns estimated swap output for swapping InputToken * InputUnits -> OutputToken via SpartanProtocol V2 AMM.
+`inputUnits` type is WEI (not units). So if you want to swap 1.00 BNB/unit you would enter 1000000000000000000.
+The return amount is also in WEI as a string, so interfaces will need to convert from WEI -> units for users.
+When swapping to/from BNB you can enter either the WBNB address (0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c) or the BNB address (0x0000000000000000000000000000000000000000) the API will convert both to the corresponding correct WBNB pool.
+
+### Request
+
+`GET https://api.spartanprotocol.org/api/v1/swapQuote?inputAddr=0x55d398326f99059fF775485246999027B3197955&outputAddr=0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56&inputUnits=100000000000000000000`
+
+### Response
+
+```json5
+"100019501036169151511"
+```
