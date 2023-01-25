@@ -94,9 +94,18 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     const baseAmount = BN(current.baseAmount);
     const tokenAmount = BN(current.tokenAmount);
     const basePrice = baseAmount.div(tokenAmount);
+    const tokenPrice = tokenAmount.div(baseAmount);
     const usdPrice = basePrice.times(spartaPrice);
 
+    const depthTwoPcPlus = tokenAmount.div(100);
+    const depthTwoPcPlusUsd = weiToUnit(depthTwoPcPlus)
+      .div(tokenPrice)
+      .times(spartaPrice);
+    const depthTwoPcMinus = baseAmount.div(100);
+    const depthTwoPcMinusUsd = weiToUnit(depthTwoPcMinus).times(spartaPrice);
+
     prev[`${addr.spartav2}_${getAddress(current.token0.id)}`] = {
+      ticker_id: "SPARTA_" + current.token0.symbol,
       poolAddr: getAddress(current.id),
       base_id: "0x3910db0600eA925F63C36DdB1351aB6E2c6eb102",
       base_name: "Spartan Protocol Token",
@@ -105,11 +114,16 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       quote_name: current.token0.name,
       quote_symbol: current.token0.symbol,
       last_price: basePrice,
+      last_price_quote: tokenPrice,
       last_price_usd: usdPrice,
       volume: weiToUnit(current.volRollingSPARTA),
       volume_quote: weiToUnit(current.volRollingTOKEN),
       volume_usd: weiToUnit(current.volRollingUSD),
       liquidity_usd: weiToUnit(current.tvlUSD),
+      depth_two_pc_plus_quote: weiToUnit(depthTwoPcPlus),
+      depth_two_pc_plus_usd: depthTwoPcPlusUsd,
+      depth_two_pc_minus_base: weiToUnit(depthTwoPcMinus),
+      depth_two_pc_minus_usd: depthTwoPcMinusUsd,
       swapUrl:
         "https://dapp.spartanprotocol.org/swap?asset1=" +
         getAddress(current.token0.id),
