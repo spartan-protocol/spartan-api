@@ -7,7 +7,7 @@ import { ethers } from "ethers";
 export default async (req: VercelRequest, res: VercelResponse) => {
   const poolsQuery = `
     query {
-      pools(orderBy: baseAmount, orderDirection: desc) {
+      pools(orderBy: baseAmount, orderDirection: desc, first: 20) {
         id
         symbol
         token0 {id, symbol, name, decimals}
@@ -106,12 +106,22 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   awaitArray = await Promise.all(awaitArray);
 
   for (let i = 0; i < pools.length; i++) {
-    pools[i].volRollingSPARTA =
-      awaitArray[i].data.data.metricsPoolDays[0].volRollingSPARTA;
-    pools[i].volRollingTOKEN =
-      awaitArray[i].data.data.metricsPoolDays[0].volRollingTOKEN;
-    pools[i].volRollingUSD =
-      awaitArray[i].data.data.metricsPoolDays[0].volRollingUSD;
+    if (
+      awaitArray[i] &&
+      awaitArray[i].data &&
+      awaitArray[i].data.data &&
+      awaitArray[i].data.data.metricsPoolDays &&
+      awaitArray[i].data.data.metricsPoolDays[0]
+    ) {
+      pools[i].volRollingSPARTA =
+        awaitArray[i].data.data.metricsPoolDays[0].volRollingSPARTA;
+      pools[i].volRollingTOKEN =
+        awaitArray[i].data.data.metricsPoolDays[0].volRollingTOKEN;
+      pools[i].volRollingUSD =
+        awaitArray[i].data.data.metricsPoolDays[0].volRollingUSD;
+    } else {
+      pools.splice(i, 1); // remove bad pool from array
+    }
   }
 
   const poolResult = pools.reduce((prev, current) => {
