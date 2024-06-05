@@ -4,9 +4,10 @@
     "deploy": "vercel deploy --prod"
   },
   "devDependencies": {
-    "vercel": "^28.13.1"
+    "vercel": "^34.2.5"
   },
   "dependencies": {
+    "@vercel/kv": "^2.0.0",
     "axios": "^0.24.0",
     "bignumber.js": "^9.0.1",
     "ethers": "^5.5.1"

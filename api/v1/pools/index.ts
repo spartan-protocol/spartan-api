@@ -1,36 +1,65 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getAddress } from "@ethersproject/address";
+import { kv } from "@vercel/kv";
 import axios from "axios";
-import { abis, addr, BN, getRPC, subgraphAPI, weiToUnit } from "../../../utils";
+import BigNumber from "bignumber.js";
+import { abis, addr, getRPC, subgraphAPI, weiToUnit } from "../../../utils";
 import { ethers } from "ethers";
 
+export type TopPoolsQuery = {
+  token0: { id: string };
+};
+
+type PoolRes = {
+  [key: string]: {
+    ticker_id: string;
+    pool_address: string;
+    base_id: string;
+    base_name: string;
+    base_symbol: string;
+    quote_id: string;
+    quote_name: string;
+    quote_symbol: string;
+    last_price: BigNumber;
+    last_price_quote: BigNumber;
+    last_price_usd: BigNumber;
+    volume: BigNumber;
+    volume_quote: BigNumber;
+    volume_usd: BigNumber;
+    liquidity_usd: BigNumber;
+    depth_two_pc_plus_quote: BigNumber;
+    depth_two_pc_plus_usd: BigNumber;
+    depth_two_pc_minus_base: BigNumber;
+    depth_two_pc_minus_usd: BigNumber;
+    swapUrl: string;
+  };
+};
+
+type PoolsShape = {
+  [key: string]: {
+    ticker_id: string;
+    poolAddr: string;
+    base_id: string;
+    base_name: string;
+    base_symbol: string;
+    quote_id: string;
+    quote_name: string;
+    quote_symbol: string;
+    last_price: BigNumber;
+    last_price_quote: BigNumber;
+    last_price_usd: BigNumber;
+    volume: BigNumber;
+    volume_quote: BigNumber;
+    volume_usd: BigNumber;
+    liquidity_usd: BigNumber;
+    depth_two_pc_plus_quote: BigNumber;
+    depth_two_pc_plus_usd: BigNumber;
+    depth_two_pc_minus_base: BigNumber;
+    depth_two_pc_minus_usd: BigNumber;
+    swapUrl: string;
+  };
+};
+
 export default async (req: VercelRequest, res: VercelResponse) => {
-  const poolsQuery = `
-    query {
-      pools(orderBy: baseAmount, orderDirection: desc, first: 20) {
-        id
-        symbol
-        token0 {id, symbol, name, decimals}
-        totalSupply
-        baseAmount
-        tokenAmount
-        tvlUSD
-      }
-    }
-  `;
-
-  const endpoint = subgraphAPI;
-
-  const headers = {
-    "content-type": "application/json",
-  };
-
-  const graphqlQuery = {
-    operationName: "pools",
-    query: poolsQuery,
-    variables: {},
-  };
-
   const rpc = await getRPC(); // Get good RPC url
   if (!rpc || !rpc.good) {
     res.status(500).json({
@@ -42,7 +71,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
-  let spartaPrice = "0.013";
+  let spartaPrice: string;
   try {
     const provider = new ethers.providers.JsonRpcProvider(rpc.url); // Get provider via RPC
     const ssutilsContract = new ethers.Contract(
@@ -53,21 +82,90 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     spartaPrice = await ssutilsContract.getInternalPrice();
     spartaPrice = weiToUnit(spartaPrice.toString()).toString();
   } catch (error) {
-    const resp = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price?ids=spartan-protocol-token&vs_currencies=usd"
-    );
-    spartaPrice = resp.data["spartan-protocol-token"].usd;
+    res.status(500).json({
+      error: {
+        code: 500,
+        message: "error getting SPARTA price",
+      },
+    });
   }
 
-  let pools = [];
-  try {
-    const response = await axios({
-      url: endpoint,
-      method: "post",
-      headers: headers,
-      data: graphqlQuery,
+  const topPoolsQuery = `
+  query {
+    pools(orderBy: baseAmount, orderDirection: desc, first: 10) {
+      token0 {id}
+    }
+  }
+`;
+
+  let topPools: TopPoolsQuery[] = await kv.get<TopPoolsQuery[]>("topPools");
+  if (!topPools) {
+    try {
+      const response = await axios({
+        url: subgraphAPI,
+        method: "post",
+        headers: { "content-type": "application/json" },
+        data: {
+          operationName: "pools",
+          query: topPoolsQuery,
+          variables: {},
+        },
+      });
+      topPools = response.data.data.pools;
+      await kv.set("topPools", topPools, { ex: 21600 });
+    } catch (error) {
+      res.status(500).json({
+        error: {
+          code: 500,
+          message: error.message,
+        },
+      });
+      return;
+    }
+  }
+
+  // 500 because this should never happen
+  if (!topPools || topPools.length === 0) {
+    res.status(500).json({
+      error: {
+        code: 500,
+        message: "No pools found",
+      },
     });
-    pools = response.data.data.pools;
+    return;
+  }
+
+  let hostname = req.headers.host;
+  if (hostname?.includes("localhost")) {
+    hostname = "http://localhost:3000";
+  } else {
+    hostname = `https://${hostname}`;
+  }
+
+  let awaitArray: Promise<PoolRes>[] = topPools.map((pool) => {
+    const url = `${hostname}/api/v1/pool?address=${pool.token0.id}&rpcUrl=${rpc.url}&spartaPrice=${spartaPrice}`;
+    return axios.get(url);
+  });
+
+  let newPoolsData: PoolRes[];
+  let reducedPoolsData: PoolsShape;
+  try {
+    newPoolsData = await Promise.all(awaitArray);
+    const transformedArray = newPoolsData.map((pool) => {
+      const key = Object.keys(pool.data)[0];
+      const { ticker_id, pool_address, ...rest } = pool.data[key];
+      return {
+        [key]: {
+          ticker_id,
+          poolAddr: pool_address,
+          ...rest,
+        },
+      };
+    });
+
+    reducedPoolsData = transformedArray.reduce((accumulator, current) => {
+      return { ...accumulator, ...current };
+    }, {});
   } catch (error) {
     res.status(500).json({
       error: {
@@ -75,95 +173,20 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         message: error.message,
       },
     });
+    return;
   }
 
-  let awaitArray = [];
-  for (let i = 0; i < pools.length; i++) {
-    const metricQuery = `
-      query {
-        metricsPoolDays(first: 1, orderBy: timestamp, orderDirection: desc, where: {pool: "${pools[i].id}"}) {
-          volRollingUSD,
-          volRollingSPARTA,
-            volRollingTOKEN,
-          }
-        }
-        `;
-    const graphqlQuery1 = {
-      operationName: "metricsPoolDays",
-      query: metricQuery,
-      variables: {},
-    };
-    awaitArray.push(
-      axios({
-        url: endpoint,
-        method: "post",
-        headers: headers,
-        data: graphqlQuery1,
-      })
-    );
+  if (!newPoolsData || newPoolsData.length === 0) {
+    res.status(500).json({
+      error: {
+        code: 500,
+        message: "No pools found",
+      },
+    });
+    return;
   }
 
-  awaitArray = await Promise.all(awaitArray);
-
-  for (let i = 0; i < pools.length; i++) {
-    if (
-      awaitArray[i] &&
-      awaitArray[i].data &&
-      awaitArray[i].data.data &&
-      awaitArray[i].data.data.metricsPoolDays &&
-      awaitArray[i].data.data.metricsPoolDays[0]
-    ) {
-      pools[i].volRollingSPARTA =
-        awaitArray[i].data.data.metricsPoolDays[0].volRollingSPARTA;
-      pools[i].volRollingTOKEN =
-        awaitArray[i].data.data.metricsPoolDays[0].volRollingTOKEN;
-      pools[i].volRollingUSD =
-        awaitArray[i].data.data.metricsPoolDays[0].volRollingUSD;
-    } else {
-      pools.splice(i, 1); // remove bad pool from array
-    }
-  }
-
-  const poolResult = pools.reduce((prev, current) => {
-    const baseAmount = BN(current.baseAmount);
-    const tokenAmount = BN(current.tokenAmount);
-    const basePrice = baseAmount.div(tokenAmount);
-    const tokenPrice = tokenAmount.div(baseAmount);
-    const usdPrice = basePrice.times(spartaPrice);
-
-    const depthTwoPcPlus = tokenAmount.div(100);
-    const depthTwoPcPlusUsd = weiToUnit(depthTwoPcPlus)
-      .div(tokenPrice)
-      .times(spartaPrice);
-    const depthTwoPcMinus = baseAmount.div(100);
-    const depthTwoPcMinusUsd = weiToUnit(depthTwoPcMinus).times(spartaPrice);
-
-    prev[`${addr.spartav2}_${getAddress(current.token0.id)}`] = {
-      ticker_id: "SPARTA_" + current.token0.symbol,
-      poolAddr: getAddress(current.id),
-      base_id: "0x3910db0600eA925F63C36DdB1351aB6E2c6eb102",
-      base_name: "Spartan Protocol Token",
-      base_symbol: "SPARTA",
-      quote_id: getAddress(current.token0.id),
-      quote_name: current.token0.name,
-      quote_symbol: current.token0.symbol,
-      last_price: basePrice,
-      last_price_quote: tokenPrice,
-      last_price_usd: usdPrice,
-      volume: weiToUnit(current.volRollingSPARTA),
-      volume_quote: weiToUnit(current.volRollingTOKEN),
-      volume_usd: weiToUnit(current.volRollingUSD),
-      liquidity_usd: weiToUnit(current.tvlUSD),
-      depth_two_pc_plus_quote: weiToUnit(depthTwoPcPlus),
-      depth_two_pc_plus_usd: depthTwoPcPlusUsd,
-      depth_two_pc_minus_base: weiToUnit(depthTwoPcMinus),
-      depth_two_pc_minus_usd: depthTwoPcMinusUsd,
-      swapUrl:
-        "https://dapp.spartanprotocol.org/swap?asset1=" +
-        getAddress(current.token0.id),
-    };
-    return prev;
-  }, {});
-
-  res.status(200).json(poolResult);
+  // Set the Cache-Control header to cache the response for 5 minutes for clients & CDNs
+  res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate");
+  res.status(200).json(reducedPoolsData);
 };

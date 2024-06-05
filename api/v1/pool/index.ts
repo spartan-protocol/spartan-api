@@ -3,6 +3,17 @@ import { getAddress } from "@ethersproject/address";
 import axios from "axios";
 import { abis, addr, BN, getRPC, subgraphAPI, weiToUnit } from "../../../utils";
 import { ethers } from "ethers";
+import { kv } from "@vercel/kv";
+
+export type PoolData = {
+  pool: {
+    id: string;
+    token0: { id: string; symbol: string; name: string };
+  };
+  volRollingUSD: string;
+  volRollingSPARTA: string;
+  volRollingTOKEN: string;
+};
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   if (
@@ -19,7 +30,12 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
-  const rpc = await getRPC(); // Get good RPC url
+  let rpc: { url: string; good: boolean; block?: number };
+  if (typeof req.query.rpcUrl === "string") {
+    rpc = { url: req.query.rpcUrl, good: true };
+  } else {
+    rpc = await getRPC(); // Get good RPC url
+  }
   if (!rpc || !rpc.good) {
     res.status(500).json({
       error: {
@@ -30,24 +46,43 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
+  // let hostname = req.headers.host;
+  // if (hostname?.includes("localhost")) {
+  //   hostname = "http://localhost:3000";
+  // } else {
+  //   hostname = `https://${hostname}`;
+  // }
+
   try {
     const provider = new ethers.providers.JsonRpcProvider(rpc.url); // Get provider via RPC
     const utilsContract = new ethers.Contract(addr.utils, abis.utils, provider); // Get UTILS contract
     const poolAddr = await utilsContract.getPool(getAddress(req.query.address));
-    let spartaPrice = "0.013";
+    let spartaPrice = "0.01";
+
+    const ssutilsContract = new ethers.Contract(
+      addr.ssutils,
+      abis.ssutils,
+      provider
+    ); // Get SpartanSwap Utils contract
+
     try {
-      const ssutilsContract = new ethers.Contract(
-        addr.ssutils,
-        abis.ssutils,
-        provider
-      ); // Get SpartanSwap Utils contract
-      spartaPrice = await ssutilsContract.getInternalPrice();
-      spartaPrice = weiToUnit(spartaPrice.toString()).toString();
+      if (typeof req.query.spartaPrice === "string") {
+        spartaPrice = req.query.spartaPrice;
+      } else {
+        // const { data } = await axios.get(
+        //   `${hostname}/api/v1/internalPrice?rpcUrl=${rpc.url}`
+        // );
+        // spartaPrice = data;
+        spartaPrice = await ssutilsContract.getInternalPrice();
+        spartaPrice = weiToUnit(spartaPrice.toString()).toString();
+      }
     } catch (error) {
-      const resp = await axios.get(
-        "https://api.coingecko.com/api/v3/simple/price?ids=spartan-protocol-token&vs_currencies=usd"
-      );
-      spartaPrice = resp.data["spartan-protocol-token"].usd;
+      res.status(500).json({
+        error: {
+          code: 500,
+          message: "error getting SPARTA price",
+        },
+      });
     }
 
     if (poolAddr === addr.bnb) {
@@ -59,11 +94,31 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       });
       return;
     }
-    
+
+    let baseAmount = BN("0");
+    let tokenAmount = BN("0");
+    let tvlUSD = BN("0");
+    try {
+      const poolDeets = await ssutilsContract.getPoolDetails(addr.bnb, [
+        req.query.address,
+      ]);
+      baseAmount = BN(poolDeets[0].baseAmount.toString());
+      tokenAmount = BN(poolDeets[0].tokenAmount.toString());
+      tvlUSD = baseAmount.times(spartaPrice).times(2);
+    } catch (error) {
+      res.status(500).json({
+        error: {
+          code: 500,
+          message: error.message,
+        },
+      });
+      return;
+    }
+
     const poolsQuery = `
       query {
         metricsPoolDays(first: 1, orderBy: timestamp, orderDirection: desc, where: {pool: "${poolAddr.toLowerCase()}"}) {
-          pool {id, token0 {id, symbol, name, decimals}, baseAmount, tokenAmount, tvlUSD}
+          pool {id, token0 {id, symbol, name}}
           volRollingUSD,
           volRollingSPARTA,
           volRollingTOKEN,
@@ -72,38 +127,51 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     `;
 
     const endpoint = subgraphAPI;
-
     const headers = {
       "content-type": "application/json",
     };
-
     const graphqlQuery = {
       operationName: "metricsPoolDays",
       query: poolsQuery,
       variables: {},
     };
 
-    let pools = [];
-    try {
-      const response = await axios({
-        url: endpoint,
-        method: "post",
-        headers: headers,
-        data: graphqlQuery,
-      });
-      pools = response.data.data.metricsPoolDays;
-    } catch (error) {
-      res.status(500).json({
+    // Cached result of pool data by pool address
+    let pools: PoolData[] = await kv.get<PoolData[]>(poolAddr.toLowerCase());
+    if (!pools) {
+      try {
+        const response = await axios({
+          url: endpoint,
+          method: "post",
+          headers: headers,
+          data: graphqlQuery,
+        });
+        pools = response.data.data.metricsPoolDays;
+        await kv.set(poolAddr.toLowerCase(), pools, {
+          ex: 21600, // Cache for 6 hours
+        });
+      } catch (error) {
+        res.status(500).json({
+          error: {
+            code: 500,
+            message: error.message,
+          },
+        });
+        return;
+      }
+    }
+
+    if (!pools || pools.length === 0) {
+      res.status(400).json({
         error: {
-          code: 500,
-          message: error.message,
+          code: 400,
+          message: "No pools found",
         },
       });
+      return;
     }
 
     const poolResult = pools.reduce((prev, current) => {
-      const baseAmount = BN(current.pool.baseAmount);
-      const tokenAmount = BN(current.pool.tokenAmount);
       const basePrice = baseAmount.div(tokenAmount);
       const tokenPrice = tokenAmount.div(baseAmount);
       const usdPrice = basePrice.times(spartaPrice);
@@ -130,7 +198,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         volume: weiToUnit(current.volRollingSPARTA),
         volume_quote: weiToUnit(current.volRollingTOKEN),
         volume_usd: weiToUnit(current.volRollingUSD),
-        liquidity_usd: weiToUnit(current.pool.tvlUSD),
+        liquidity_usd: weiToUnit(tvlUSD),
         depth_two_pc_plus_quote: weiToUnit(depthTwoPcPlus),
         depth_two_pc_plus_usd: depthTwoPcPlusUsd,
         depth_two_pc_minus_base: weiToUnit(depthTwoPcMinus),
@@ -150,5 +218,6 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         message: error.message,
       },
     });
+    return;
   }
 };
