@@ -30,7 +30,12 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
-  const rpc = await getRPC(); // Get good RPC url
+  let rpc: { url: string; good: boolean; block?: number };
+  if (typeof req.query.rpcUrl === "string") {
+    rpc = { url: req.query.rpcUrl, good: true };
+  } else {
+    rpc = await getRPC(); // Get good RPC url
+  }
   if (!rpc || !rpc.good) {
     res.status(500).json({
       error: {
@@ -41,18 +46,18 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
-  let hostname = req.headers.host;
-  if (hostname?.includes("localhost")) {
-    hostname = "http://localhost:3000";
-  } else {
-    hostname = `https://${hostname}`;
-  }
+  // let hostname = req.headers.host;
+  // if (hostname?.includes("localhost")) {
+  //   hostname = "http://localhost:3000";
+  // } else {
+  //   hostname = `https://${hostname}`;
+  // }
 
   try {
     const provider = new ethers.providers.JsonRpcProvider(rpc.url); // Get provider via RPC
     const utilsContract = new ethers.Contract(addr.utils, abis.utils, provider); // Get UTILS contract
     const poolAddr = await utilsContract.getPool(getAddress(req.query.address));
-    let spartaPrice = "0.013";
+    let spartaPrice = "0.01";
 
     const ssutilsContract = new ethers.Contract(
       addr.ssutils,
@@ -61,10 +66,16 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     ); // Get SpartanSwap Utils contract
 
     try {
-      const { data } = await axios.get(
-        `${hostname}/api/v1/internalPrice?rpcUrl=${rpc.url}`
-      );
-      spartaPrice = data;
+      if (typeof req.query.spartaPrice === "string") {
+        spartaPrice = req.query.spartaPrice;
+      } else {
+        // const { data } = await axios.get(
+        //   `${hostname}/api/v1/internalPrice?rpcUrl=${rpc.url}`
+        // );
+        // spartaPrice = data;
+        spartaPrice = await ssutilsContract.getInternalPrice();
+        spartaPrice = weiToUnit(spartaPrice.toString()).toString();
+      }
     } catch (error) {
       res.status(500).json({
         error: {
