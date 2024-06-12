@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAddress } from "@ethersproject/address";
 import axios from "axios";
-import { abis, addr, BN, getRPC, subgraphAPI, weiToUnit } from "../../../utils";
+import { abis, addr, BN, getRPC, subgraphUrl, weiToUnit } from "../../../utils";
 import { ethers } from "ethers";
 import { kv } from "@vercel/kv";
 
@@ -126,7 +126,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       }
     `;
 
-    const endpoint = subgraphAPI;
+    const endpoint = subgraphUrl;
     const headers = {
       "content-type": "application/json",
     };
@@ -210,6 +210,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       return prev;
     }, {});
 
+    // Set the Cache-Control header to cache the response for 15 minutes for clients & CDNs
+    res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate");
     res.status(200).json(poolResult);
   } catch (error) {
     res.status(500).json({

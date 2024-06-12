@@ -33,6 +33,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
     const tvlUSD = weiToUnit(spartaPrice).times(tvlSparta);
 
+    // Set the Cache-Control header to cache the response for 5 minutes for clients & CDNs
+    res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate");
     res.status(200).json(weiToUnit(tvlUSD).toNumber());
   } catch (error) {
     res.status(500).json({

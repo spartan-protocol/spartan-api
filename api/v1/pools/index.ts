@@ -2,7 +2,7 @@ import { VercelRequest, VercelResponse } from "@vercel/node";
 import { kv } from "@vercel/kv";
 import axios from "axios";
 import BigNumber from "bignumber.js";
-import { abis, addr, getRPC, subgraphAPI, weiToUnit } from "../../../utils";
+import { abis, addr, getRPC, subgraphUrl, weiToUnit } from "../../../utils";
 import { ethers } from "ethers";
 
 export type TopPoolsQuery = {
@@ -102,7 +102,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   if (!topPools) {
     try {
       const response = await axios({
-        url: subgraphAPI,
+        url: subgraphUrl,
         method: "post",
         headers: { "content-type": "application/json" },
         data: {
@@ -186,7 +186,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
-  // Set the Cache-Control header to cache the response for 5 minutes for clients & CDNs
-  res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate");
+  // Set the Cache-Control header to cache the response for 15 minutes for clients & CDNs
+  res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate");
   res.status(200).json(reducedPoolsData);
 };

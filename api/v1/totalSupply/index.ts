@@ -29,6 +29,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
     const supply = awaitArray[0].toString(); // Total Supply minus burned
 
+    // Set the Cache-Control header to cache the response for 15 minutes for clients & CDNs
+    res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate");
     res.status(200).json(weiToUnit(supply).toNumber());
   } catch (error) {
     res.status(500).json({

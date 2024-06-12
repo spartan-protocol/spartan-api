@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { ethers } from "ethers";
-import { abis, addr, getRPC, weiToUnit } from "../../../utils";
+import { abis, addr, getRPC } from "../../../utils";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   if (
@@ -66,6 +66,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       req.query.inputUnits
     );
 
+    // Set the Cache-Control header to cache the response for 1 minute for clients & CDNs
+    res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate");
     res.status(200).json(swapOutput.toString());
   } catch (error) {
     res.status(500).json({
