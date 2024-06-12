@@ -45,7 +45,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       );
       spartaPrice = resp.data["spartan-protocol-token"].usd;
     }
-    // Cache SPARTA price for 60 seconds
+    // Set the Cache-Control header to cache the response for 1 minute for clients & CDNs
     res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate");
     res.status(200).json(spartaPrice);
   } catch (error) {
