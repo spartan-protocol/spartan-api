@@ -58,8 +58,14 @@ export const weiToUnit = (weiString) => {
   return BN(weiString).shiftedBy(-18);
 };
 
-export const subgraphAPI =
-  "https://api.thegraph.com/subgraphs/name/spartan-protocol/pool-factory";
+// export const subgraphAPI =
+//   "https://api.thegraph.com/subgraphs/name/spartan-protocol/pool-factory";
+
+const isDevelopment = false;
+
+export const subgraphUrl = isDevelopment
+  ? `https://api.studio.thegraph.com/query/33612/spartan-protocol-contracts/version/latest`
+  : `https://gateway-arbitrum.network.thegraph.com/api/${process.env.REACT_APP_SG_API_KEY}/subgraphs/id/9vN1kRac6B224oTjNnFe9vYnJXj5fxaa3ivDfg1hh3v5`;
 
 const checkResolved = (settledItem, errorMsg) => {
   if (settledItem.status === "fulfilled") {

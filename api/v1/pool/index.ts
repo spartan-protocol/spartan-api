@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAddress } from "@ethersproject/address";
 import axios from "axios";
-import { abis, addr, BN, getRPC, subgraphAPI, weiToUnit } from "../../../utils";
+import { abis, addr, BN, getRPC, subgraphUrl, weiToUnit } from "../../../utils";
 import { ethers } from "ethers";
 import { kv } from "@vercel/kv";
 
@@ -126,7 +126,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       }
     `;
 
-    const endpoint = subgraphAPI;
+    const endpoint = subgraphUrl;
     const headers = {
       "content-type": "application/json",
     };
