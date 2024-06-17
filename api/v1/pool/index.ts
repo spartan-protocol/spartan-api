@@ -46,13 +46,6 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
-  // let hostname = req.headers.host;
-  // if (hostname?.includes("localhost")) {
-  //   hostname = "http://localhost:3000";
-  // } else {
-  //   hostname = `https://${hostname}`;
-  // }
-
   try {
     const provider = new ethers.providers.JsonRpcProvider(rpc.url); // Get provider via RPC
     const utilsContract = new ethers.Contract(addr.utils, abis.utils, provider); // Get UTILS contract
@@ -69,10 +62,6 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       if (typeof req.query.spartaPrice === "string") {
         spartaPrice = req.query.spartaPrice;
       } else {
-        // const { data } = await axios.get(
-        //   `${hostname}/api/v1/internalPrice?rpcUrl=${rpc.url}`
-        // );
-        // spartaPrice = data;
         spartaPrice = await ssutilsContract.getInternalPrice();
         spartaPrice = weiToUnit(spartaPrice.toString()).toString();
       }
@@ -147,9 +136,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           data: graphqlQuery,
         });
         pools = response.data.data.metricsPoolDays;
-        await kv.set(poolAddr.toLowerCase(), pools, {
-          ex: 21600, // Cache for 6 hours
-        });
+        await kv.set(poolAddr.toLowerCase(), pools, { ex: 19440 }); // (6 hours * 90%)
       } catch (error) {
         res.status(500).json({
           error: {
@@ -210,8 +197,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       return prev;
     }, {});
 
-    // Set the Cache-Control header to cache the response for 15 minutes for clients & CDNs
-    res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate");
+    // Set the Cache-Control header to cache the response for (60 mins * 90%) for clients & CDNs
+    res.setHeader("Cache-Control", "s-maxage=3900, stale-while-revalidate");
     res.status(200).json(poolResult);
   } catch (error) {
     res.status(500).json({
