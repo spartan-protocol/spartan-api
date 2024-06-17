@@ -1,5 +1,4 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import axios from "axios";
 import { ethers } from "ethers";
 import { addr, abis, weiToUnit, getRPC } from "../../../utils";
 
@@ -40,11 +39,14 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       spartaPrice = await ssutilsContract.getInternalPrice();
       spartaPrice = weiToUnit(spartaPrice.toString()).toString();
     } catch (error) {
-      const resp = await axios.get(
-        "https://api.coingecko.com/api/v3/simple/price?ids=spartan-protocol-token&vs_currencies=usd"
-      );
-      spartaPrice = resp.data["spartan-protocol-token"].usd;
+      res.status(500).json({
+        error: {
+          code: 500,
+          message: "error getting SPARTA price",
+        },
+      });
     }
+
     // Set the Cache-Control header to cache the response for 1 minute for clients & CDNs
     res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate");
     res.status(200).json(spartaPrice);
